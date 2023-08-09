@@ -1,94 +1,199 @@
 package com.example.c196.Activities;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
+import android.icu.text.SimpleDateFormat;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Button;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
-import com.example.c196.DAO.CourseDAO;
-import com.example.c196.DAO.TermDAO;
-import com.example.c196.Database.C196DatabaseBuilder;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.c196.Database.Repository;
 import com.example.c196.Entities.Course;
 import com.example.c196.Entities.Term;
 import com.example.c196.R;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
-public class EditTermActivity extends AppCompatActivity {
-    EditText titleInput;
-    EditText startDateInput;
-    EditText endDateInput;
-    EditText courseName;
-    Button saveButton;
-    private TermAdapter termAdapter;
+public class TermDetails extends AppCompatActivity {
+    String name;
+    Date startDate;
+    Date endDate;
 
+    int termID;
+    EditText editName;
+    EditText editStartDate;
+    EditText editEndDate;
+    Repository repository;
+    Term currentTerm;
+    int numCourses;
+    private List<Term> allTerms = new ArrayList<>();
+    private List<Course> allCourses = new ArrayList<>();
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        termAdapter = new TermAdapter(this, new ArrayList<>());
-
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_edit_term);
-        Intent intent = getIntent();
-        titleInput = findViewById(R.id.title_input);
-        startDateInput = findViewById(R.id.start_date_input);
-        endDateInput = findViewById(R.id.end_date_input);
+        setContentView(R.layout.term_details);
+        name = getIntent().getStringExtra("name");
+        long startDateLong = getIntent().getLongExtra("startDate", -1);
+//        long endDateLong = getIntent().getLongExtra("endDate", -1);
+//        Log.d("TermDetails", "startDateLong: " + startDateLong);
+//        Log.d("TermDetails", "endDateLong: " + endDateLong);
+//        if (startDateLong != -1) {
+//            startDate = new Date(startDateLong);
+//        }
+//        if (endDateLong != -1) {
+//            endDate = new Date(endDateLong);
+//        }
 
-        if(intent.getExtras() != null) {
-            String termTitle = intent.getStringExtra("term_title");
-            titleInput.setText(termTitle);
-            String courseNameValue = intent.getStringExtra("course_name");
-            courseName.setText(courseNameValue); // set the course name
-            long startDateMillis = intent.getLongExtra("term_start_date", -1);
-            Date startDate = new Date(startDateMillis);
-            startDateInput.setText(dateToString(startDate));
+        editName = findViewById(R.id.termTitle);
+        editStartDate = findViewById(R.id.startDate);
+        editEndDate = findViewById(R.id.endDate);
+        editName = findViewById(R.id.termTitle);
 
-            long endDateMillis = intent.getLongExtra("term_end_date", -1);
-            Date endDate = new Date(endDateMillis);
-            endDateInput.setText(dateToString(endDate));
-        }
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//        if (startDate != null) {
+//            editStartDate.setText(sdf.format(startDate));
+//        }
+//        if (endDate != null) {
+//            editEndDate.setText(sdf.format(endDate));
+//        }
+//
+//        editStartDate.setText(sdf.format(startDate));
+//        editEndDate.setText(sdf.format(endDate));
 
-        saveButton = findViewById(R.id.save_button);
-        saveButton.setOnClickListener(v -> {
-            String title = titleInput.getText().toString();
-            Date start_date = stringToDate(startDateInput.getText().toString());
-            Date end_date = stringToDate(endDateInput.getText().toString());
-            Term newTerm = new Term(title, start_date, end_date);
+        name = getIntent().getStringExtra("name");
+        editName.setText(name);
+        termID = getIntent().getIntExtra("id", -1);
+        repository = new Repository(getApplication());
+        final CourseAdapter courseAdapter = new CourseAdapter(this);
+        List<Course> filteredCourses = new ArrayList<>();
 
-            new Thread(() -> {
-                C196DatabaseBuilder db = C196DatabaseBuilder.getDatabase(getApplicationContext());
-                TermDAO termDAO = db.termDAO();
-                long newTermId = termDAO.insert(newTerm);
-
-                finish();
-            }).start();
+        repository.getAllTerms().observe(this, terms -> {
+            allTerms = terms;
         });
 
+        repository.getAllCourses().observe(this, courses -> {
+            allCourses = courses;
+        });
+
+        courseAdapter.setCourses(filteredCourses);
+
+        FloatingActionButton fab = findViewById(R.id.floatingActionButton2);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(TermDetails.this, CourseDetails.class);
+                intent.putExtra("termID", termID);
+                intent.putExtra("startDate", startDate.getTime()); // Assuming startDate is a Date object
+                intent.putExtra("endDate", endDate.getTime()); // Assuming endDate is a Date object
+                startActivity(intent);
+            }
+        });
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+                case R.id.addCourses: // Assuming the ID for the "Add Courses" menu item is addCourses
+                Intent intent = new Intent(TermDetails.this, CourseList.class); // Assuming CourseList is the name of the activity for the course list screen
+                startActivity(intent);
+                return true;
+            // Handle other menu items if needed
+        }
+        return super.onOptionsItemSelected(item);
     }
 
-    private Date stringToDate(String dateInput) {
-        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.US);
-        try {
-            return format.parse(dateInput);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return null;
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_term_details, menu);
+        return true;
+    }
+
+    private void saveTerm() {
+        Term term;
+        if (termID == -1) {
+            if (allTerms.isEmpty()) {
+                termID = 1;
+            } else {
+                termID = allTerms.get(allTerms.size() - 1).getTermID() + 1;
+            }
+            term = new Term(termID, editName.getText().toString());
+            repository.insert(term);
+        } else {
+            term = new Term(termID, editName.getText().toString());
+            repository.update(term);
+        }
+        Intent intent = new Intent(TermDetails.this, TermList.class);
+        startActivity(intent);
+    }
+    public void handleTermSave(View view) {
+        saveTerm();
+    }
+
+
+    private void handleTermDelete() {
+        Term currentTerm = null;
+        for (Term term : allTerms) {
+            if (term.getTermID() == termID) {
+                currentTerm = term;
+                break;
+            }
+        }
+
+        int numCourses = 0;
+        for (Course course : allCourses) {
+            if (course.getTermID() == termID) ++numCourses;
+        }
+
+        if (numCourses == 0 && currentTerm != null) {
+            repository.delete(currentTerm);
+            Toast.makeText(TermDetails.this, currentTerm.getTitle() + " was deleted", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(TermDetails.this, "Can't delete a term with parts", Toast.LENGTH_LONG).show();
         }
     }
 
-    private String dateToString(Date date) {
-        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.US);
-        return format.format(date);
+    private void handleAddCourses() {
+        if (termID == -1) {
+            Toast.makeText(TermDetails.this, "Please save term before adding parts", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        int courseID;
+        if (allCourses.isEmpty()) {
+            courseID = 1;
+        } else {
+            courseID = allCourses.get(allCourses.size() - 1).getCourseID() + 1;
+        }
+
+        Course course1 = new Course(courseID, "wheel", termID);
+        repository.insert(course1);
+        Course course2 = new Course(++courseID, "pedal", termID);
+        repository.insert(course2);
+
+        final CourseAdapter courseAdapter = new CourseAdapter(this);
+
+        List<Course> filteredCourses = new ArrayList<>();
+        for (Course c : allCourses) {
+            if (c.getTermID() == termID) {
+                filteredCourses.add(c);
+            }
+        }
+        courseAdapter.setCourses(filteredCourses);
     }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        final CourseAdapter courseAdapter = new CourseAdapter(this);
+        List<Course> filteredCourses = new ArrayList<>();
+        courseAdapter.setCourses(filteredCourses);
+    }
 }

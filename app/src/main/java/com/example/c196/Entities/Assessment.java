@@ -1,14 +1,20 @@
-package com.example.c196.model;
+package com.example.c196.Entities;
+
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
 import java.util.Date;
 
+@Entity(tableName = "assessment")
 public class Assessment {
-    private String title;
-    private Date endDate;
 
-    public Assessment(String title, Date endDate) {
+    @PrimaryKey(autoGenerate = false)
+    @NonNull
+    private String title;
+
+    public Assessment(String title) {
         this.title = title;
-        this.endDate = endDate;
     }
 
     public String getTitle() {
@@ -19,13 +25,5 @@ public class Assessment {
         this.title = title;
     }
 
-    public Date getEndDate() {
-        return endDate;
-    }
 
-    public void setEndDate(Date endDate) {
-        this.endDate = endDate;
-    }
-
-    // getter and setter methods...
 }

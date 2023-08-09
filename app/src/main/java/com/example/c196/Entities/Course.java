@@ -1,40 +1,55 @@
-package com.example.c196.model;
+package com.example.c196.Entities;
+
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
 
 import java.util.Date;
 
+@Entity(tableName = "course")
 public class Course {
-    private String title;
-    private Date startDate;
-    private Date endDate;
-    // other properties like status, instructor's name, email, etc.
 
-    public Course(String title, Date startDate, Date endDate) {
-        this.title = title;
-        this.startDate = startDate;
-        this.endDate = endDate;
+
+    private String courseName;
+    @PrimaryKey(autoGenerate = true)
+    private int courseID;
+
+    private int termID;
+
+    @Ignore
+    public Course(String courseName) {
+        this.courseName = courseName;
     }
 
-    public String getTitle() {
-        return title;
+
+    public Course(int courseID, String courseName, int termID) {
+        this.courseID = courseID;
+        this.courseName = courseName;
+        this.termID = termID;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public String getCourseName() {
+        return courseName;
     }
 
-    public Date getStartDate() {
-        return startDate;
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+    public int getCourseID() {
+        return courseID;
     }
 
-    public void setStartDate(Date startDate) {
-        this.startDate = startDate;
+    public void setCourseID(int courseID) {
+        this.courseID = courseID;
     }
 
-    public Date getEndDate() {
-        return endDate;
+    public int getTermID() {
+        return termID;
     }
 
-    public void setEndDate(Date endDate) {
-        this.endDate = endDate;
+    public void setTermId(int termId) {
+        this.termID = termId;
     }
+
 }
